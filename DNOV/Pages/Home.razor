@@ -1,0 +1,35 @@
+﻿@page "/"
+
+<PageTitle>Quote</PageTitle>
+
+<div class="quote-container">
+    <blockquote>
+        "Да пише или да списува човек на един език, трябва да го е учил доста време и да го познава много добре, ако и да е бащин му."
+    </blockquote>
+    <p class="author">— Д-р Иван Богоров</p>
+</div>
+
+<style>
+    .quote-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    blockquote {
+        font-size: 1.8rem;
+        font-style: italic;
+        max-width: 700px;
+        line-height: 1.5;
+    }
+
+    .author {
+        font-size: 1.2rem;
+        margin-top: 1rem;
+        color: #555;
+    }
+</style>

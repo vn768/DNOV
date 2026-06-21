@@ -1,0 +1,263 @@
+﻿@page "/counter"
+
+<PageTitle>Bogorov Clicker</PageTitle>
+
+<div class="clicker-container">
+    <h1>Bogorov Clicker</h1>
+
+    <div class="score-display">
+        <span class="score">@totalClicks</span>
+        <span class="score-label">clicks</span>
+    </div>
+
+    <button class="click-button" @onclick="HandleClick">
+    <img src="images/pgit-logo.png" alt="Click me" class="click-image" />
+    <span class="click-text">+@ClicksPerClick per click</span>
+</button>
+
+    <h2 class="upgrades-title">Upgrades</h2>
+
+    <div class="upgrades-grid">
+        @foreach (var upgrade in upgrades)
+        {
+            <div class="upgrade-card @(upgrade.Unlocked ? "" : "locked")">
+                <div class="upgrade-header">
+                    <span class="upgrade-icon">@upgrade.Icon</span>
+                    <span class="upgrade-name">@upgrade.Name</span>
+                </div>
+
+                @if (!upgrade.Unlocked)
+                {
+                    <p class="upgrade-desc">Unlock to gain +@upgrade.BonusPerLevel per click, per level.</p>
+                    <p class="upgrade-cost">Unlock cost: @upgrade.UnlockCost clicks</p>
+                    <button class="upgrade-btn unlock-btn"
+                            disabled="@(totalClicks < upgrade.UnlockCost)"
+                            @onclick="() => UnlockUpgrade(upgrade)">
+                        Unlock
+                    </button>
+                }
+                else
+                {
+                    <p class="upgrade-desc">Level @upgrade.Level / @MaxLevel</p>
+                    <p class="upgrade-bonus">+@(upgrade.BonusPerLevel * upgrade.Level) clicks/click</p>
+
+                    @if (upgrade.Level < MaxLevel)
+                    {
+                        <p class="upgrade-cost">Upgrade cost: @upgrade.NextUpgradeCost clicks</p>
+                        <button class="upgrade-btn"
+                                disabled="@(totalClicks < upgrade.NextUpgradeCost)"
+                                @onclick="() => UpgradeUpgrade(upgrade)">
+                            Upgrade
+                        </button>
+                    }
+                    else
+                    {
+                        <p class="maxed">Graduated!</p>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .clicker-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .score-display {
+        margin: 1rem 0 2rem 0;
+    }
+
+    .score {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #5c2d91;
+    }
+
+    .score-label {
+        font-size: 1.2rem;
+        color: #777;
+        margin-left: 0.5rem;
+    }
+
+   .click-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.1s ease;
+}
+
+.click-button:active {
+    transform: scale(0.92);
+}
+
+.click-image {
+    width: min(220px, 50vw);
+    height: auto;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+
+.click-text {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    color: #555;
+}
+
+    .upgrades-title {
+        margin-bottom: 1rem;
+    }
+
+    .upgrades-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .upgrade-card {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 1rem;
+        background: #fafafa;
+        transition: opacity 0.2s ease;
+    }
+
+        .upgrade-card.locked {
+            opacity: 0.6;
+            background: #f0f0f0;
+        }
+
+    .upgrade-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .upgrade-icon {
+        font-size: 1.5rem;
+    }
+
+    .upgrade-desc {
+        font-size: 0.9rem;
+        color: #555;
+        margin: 0.3rem 0;
+    }
+
+    .upgrade-bonus {
+        font-size: 0.9rem;
+        color: #2e7d32;
+        font-weight: bold;
+        margin: 0.3rem 0;
+    }
+
+    .upgrade-cost {
+        font-size: 0.85rem;
+        color: #888;
+        margin: 0.3rem 0;
+    }
+
+    .upgrade-btn {
+        margin-top: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        background-color: #5c2d91;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .upgrade-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+    .unlock-btn {
+        background-color: #2e7d32;
+    }
+
+        .unlock-btn:disabled {
+            background-color: #ccc;
+        }
+
+    .maxed {
+        margin-top: 0.5rem;
+        font-weight: bold;
+        color: #b8860b;
+    }
+</style>
+
+@code {
+    private const int MaxLevel = 12;
+
+    private long totalClicks = 0;
+
+    private long ClicksPerClick => 1 + upgrades.Where(u => u.Unlocked).Sum(u => u.BonusPerLevel * u.Level);
+
+    private class Upgrade
+    {
+        public string Name { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public bool Unlocked { get; set; } = false;
+        public int Level { get; set; } = 0;
+        public long UnlockCost { get; set; }
+        public long BaseUpgradeCost { get; set; }
+        public long BonusPerLevel { get; set; }
+
+        public long NextUpgradeCost =>
+            (long)(BaseUpgradeCost * Math.Pow(1.6, Level));
+    }
+
+    private List<Upgrade> upgrades = new()
+    {
+        new Upgrade { Name = "Finance",   Icon = "💶", UnlockCost = 10,    BaseUpgradeCost = 15,    BonusPerLevel = 1 },
+        new Upgrade { Name = "Business Administration",   Icon = "💰", UnlockCost = 50,    BaseUpgradeCost = 40,    BonusPerLevel = 2 },
+        new Upgrade { Name = "Trading",    Icon = "💵", UnlockCost = 150,   BaseUpgradeCost = 100,   BonusPerLevel = 4 },
+        new Upgrade { Name = "AI development",   Icon = "🖥️", UnlockCost = 400,   BaseUpgradeCost = 250,   BonusPerLevel = 8 },
+        new Upgrade { Name = "Software development",    Icon = "💻", UnlockCost = 1000,  BaseUpgradeCost = 600,   BonusPerLevel = 15 },
+        new Upgrade { Name = "Web Design", Icon = "🎨", UnlockCost = 2500,  BaseUpgradeCost = 1500,  BonusPerLevel = 30 },
+    };
+
+    private void HandleClick()
+    {
+        totalClicks += ClicksPerClick;
+    }
+
+    private void UnlockUpgrade(Upgrade upgrade)
+    {
+        if (!upgrade.Unlocked && totalClicks >= upgrade.UnlockCost)
+        {
+            totalClicks -= upgrade.UnlockCost;
+            upgrade.Unlocked = true;
+            upgrade.Level = 1;
+        }
+    }
+
+    private void UpgradeUpgrade(Upgrade upgrade)
+    {
+        if (upgrade.Unlocked && upgrade.Level < MaxLevel && totalClicks >= upgrade.NextUpgradeCost)
+        {
+            totalClicks -= upgrade.NextUpgradeCost;
+            upgrade.Level++;
+        }
+    }
+}
