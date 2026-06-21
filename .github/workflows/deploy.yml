@@ -1,0 +1,31 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish DNOV/DNOV.csproj -c Release -o release
+
+      - name: Update base href for GitHub Pages
+        run: sed -i 's#<base href="/" />#<base href="/DNOV/" />#g' release/wwwroot/index.html
+
+      - name: Add .nojekyll
+        run: touch release/wwwroot/.nojekyll
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: release/wwwroot
