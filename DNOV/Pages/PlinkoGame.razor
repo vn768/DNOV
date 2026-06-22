@@ -1,0 +1,62 @@
+﻿@page "/plinko"
+@namespace DNOV.Pages
+@implements IAsyncDisposable
+
+<h3> Plinko</h3>
+
+<div style="display:flex; gap:20px; align-items:flex-start;">
+
+    <!-- Game Board -->
+    <div>
+        <p> Money: <strong>€@euro.ToString("F2")</strong></p>
+        <p> Ball Cost: <strong>€@BallCost.ToString("F2")</strong></p>
+        <button @onclick="DropBall" disabled="@(euro < BallCost)">
+            Drop Ball (€@BallCost.ToString("F2"))
+        </button>
+        <br /><br />
+        <canvas id="plinkoCanvas" width="480" height="520"
+                style="border:2px solid #111111; border-radius:8px;">
+        </canvas>
+    </div>
+
+    <!-- Upgrades Panel -->
+    <div style="max-height:560px; overflow-y:auto; width:320px; color:white;">
+        <h4>⬆️ Upgrades</h4>
+        @foreach (var upg in Upgrades)
+        {
+            <div style="border:1px solid #444; border-radius:6px; padding:8px;
+                margin-bottom:6px; background:#1a1a2e;">
+                <strong>@upg.Icon @upg.Name</strong>
+                <span style="color:#a78bfa; margin-left:6px;">
+                    Lv @upg.CurrentLevel / @upg.MaxLevel
+                </span>
+                <div style="font-size:0.8em; color:#ccc; margin:2px 0;">
+                    @upg.Description
+                </div>
+
+                <!-- Level pips -->
+                <div style="display:flex; gap:2px; margin:4px 0;">
+                    @for (int i = 0; i < upg.MaxLevel; i++)
+                    {
+                        <div style="width:16px; height:6px; border-radius:2px;
+                            background:@(i < upg.CurrentLevel ? "#7c3aed" : "#333");">
+                        </div>
+                    }
+                </div>
+
+                @if (!upg.IsMaxed)
+                {
+                    <button @onclick="() => BuyUpgrade(upg)"
+                            disabled="@(!upg.CanAfford(euro))"
+                            style="font-size:0.8em;">
+                        Buy — €@upg.CurrentCost.ToString("F0")
+                    </button>
+                }
+                else
+                {
+                    <span style="color:#22c55e; font-size:0.8em;">✅ MAXED</span>
+                }
+            </div>
+        }
+    </div>
+</div>
