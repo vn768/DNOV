@@ -1,0 +1,221 @@
+﻿@page "/minesweeper"
+@namespace DNOV.Pages
+
+<h3>Minesweeper</h3>
+
+<div class="ms-controls">
+    <div class="ms-difficulty">
+        <button class="diff-btn @(difficulty == "easy" ? "active" : "")" @onclick='() => SetDifficulty("easy")'>Easy</button>
+        <button class="diff-btn @(difficulty == "medium" ? "active" : "")" @onclick='() => SetDifficulty("medium")'>Medium</button>
+        <button class="diff-btn @(difficulty == "hard" ? "active" : "")" @onclick='() => SetDifficulty("hard")'>Hard</button>
+    </div>
+    <button class="new-game-btn" @onclick="NewGame">🔄 New Game</button>
+</div>
+
+<div class="ms-info">
+    <span style="color: red;"> Mines left: @minesRemaining</span>
+    <span style="color: green;"> Timer: @elapsedSeconds s</span>
+</div>
+
+<p class="ms-hint">📱 Long-press to flag a cell</p>
+
+<div class="ms-board-wrap">
+    <div class="ms-board" style="grid-template-columns: repeat(@cols, @(cellSize)px);">
+        @for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                var cell = grid[r, c];
+                var row = r;
+                var col = c;
+                <div class="ms-cell @GetCellClass(cell)"
+                     style="width:@(cellSize)px; height:@(cellSize)px;"
+                     @onclick="() => Reveal(row, col)"
+                     @oncontextmenu="() => Flag(row, col)"
+                     @oncontextmenu:preventDefault="true"
+                     @ontouchstart="() => TouchStart(row, col)"
+                     @ontouchend="TouchEnd"
+                     @ontouchmove="TouchCancel">
+                    @((MarkupString)GetCellContent(cell))
+                </div> 
+            }
+        }
+    </div>
+</div>
+
+@if (gameWon)
+{
+    <p class="ms-result win">GG</p>
+}
+@if (gameOver)
+{
+    <p class="ms-result loss">GG</p>
+}
+
+<style>
+    .ms-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .ms-difficulty {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .diff-btn {
+        padding: 6px 14px;
+        border: 1px solid #555;
+        border-radius: 6px;
+        background: #2a2a2a;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+
+        .diff-btn.active {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+
+    .new-game-btn {
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid #7c3aed;
+        background: #1a1a2e;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+
+    .ms-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 1em;
+        color: white;
+        gap: 24px;
+    }
+
+    .ms-result {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+        .ms-result.win {
+            color: #22c55e;
+        }
+
+        .ms-result.loss {
+            color: #ef4444;
+        }
+
+    .ms-hint {
+        font-size: 0.8em;
+        color: #888;
+        margin: 0 0 8px;
+    }
+
+    .ms-board-wrap {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ms-board {
+        display: inline-grid;
+        gap: 2px;
+        touch-action: none;
+    }
+
+    .ms-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8em;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        border: 1px solid #444;
+        background: #2a2a3e;
+        color: white;
+        transition: background 0.1s;
+        touch-action: none;
+    }
+
+        .ms-cell.hidden:hover {
+            background: lightgrey;
+        }
+
+        .ms-cell.revealed {
+            background: #7393B3;
+            border-color: #333;
+        }
+
+        .ms-cell.flagged {
+            background: red;
+        }
+
+        .ms-cell.mine-hit {
+            background: white;
+        }
+
+        .ms-cell.mine-revealed {
+            background: white;
+        }
+
+    .n1 {
+        color: #7393B3;
+    }
+
+    .n2 {
+        color: #22c55e;
+    }
+
+    .n3 {
+        color: #ef4444;
+    }
+
+    .n4 {
+        color: #6366f1;
+    }
+
+    .n5 {
+        color: #dc2626;
+    }
+
+    .n6 {
+        color: #06b6d4;
+    }
+
+    .n7 {
+        color: #a855f7;
+    }
+
+    .n8 {
+        color: #94a3b8;
+    }
+
+    @@media (max-width: 600px) {
+        .ms-cell {
+            font-size: 0.7em;
+        }
+
+        .ms-hint {
+            display: block;
+        }
+    }
+
+    @@media (min-width: 601px) {
+        .ms-hint {
+            display: none;
+        }
+    }
+</style>
