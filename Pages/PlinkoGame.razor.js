@@ -1,17 +1,43 @@
 let canvas, ctx, balls, pegs, slots, dotnetRef, animFrameId;
-const settings = { gravity: 0.35, ballSpeedMultiplier: 1.0, restitution: 0.5 };
+const settings = { gravity: 0.35, ballSpeedMultiplier: 1.0, restitution: 0.75 };
 
-// ---- Ball image ----
 let ballImage = new Image();
 ballImage.src = './images/pgit-logo.png';
-// --------------------
 
 export function init(canvasId, ref) {
     dotnetRef = ref;
     canvas = document.getElementById(canvasId);
     ctx = canvas.getContext("2d");
     balls = [];
+
+    // Fit canvas to its rendered CSS width
+    const cssWidth = canvas.clientWidth || 480;
+    const scale = cssWidth / 480;
+    canvas.width = Math.round(480 * scale);
+    canvas.height = Math.round(520 * scale);
+
     buildBoard();
+
+    // Touch support — drop ball at tapped X position
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const touchX = (e.touches[0].clientX - rect.left) * scaleX;
+        dropBall(touchX);
+    }, { passive: false });
+
+    // Resize observer — rebuild board if canvas size changes
+    const ro = new ResizeObserver(() => {
+        const w = canvas.clientWidth;
+        if (!w || w === canvas.width) return;
+        const s = w / 480;
+        canvas.width = Math.round(480 * s);
+        canvas.height = Math.round(520 * s);
+        buildBoard();
+    });
+    ro.observe(canvas);
+
     if (animFrameId) cancelAnimationFrame(animFrameId);
     gameLoop();
 }
@@ -19,9 +45,10 @@ export function init(canvasId, ref) {
 function buildBoard() {
     pegs = [];
     slots = [];
+    const W = canvas.width, H = canvas.height;
     const rows = 10, cols = 9;
-    const spacingX = canvas.width / (cols + 1);
-    const spacingY = (canvas.height - 100) / (rows + 1);
+    const spacingX = W / (cols + 1);
+    const spacingY = (H - 100) / (rows + 1);
 
     for (let r = 0; r < rows; r++) {
         const count = (r % 2 === 0) ? cols : cols - 1;
@@ -32,12 +59,12 @@ function buildBoard() {
     }
 
     const slotCount = 9;
-    const slotW = canvas.width / slotCount;
+    const slotW = W / slotCount;
     const multipliers = [5, 2, 1, 0.5, 3, 0.5, 1, 2, 5];
     for (let i = 0; i < slotCount; i++) {
         slots.push({
             x: i * slotW,
-            y: canvas.height - 40,
+            y: H - 40,
             w: slotW,
             multiplier: multipliers[i]
         });
@@ -50,8 +77,8 @@ export function dropBall(xOverride) {
         : canvas.width / 2 + (Math.random() - 0.5) * 20;
     balls.push({
         x, y: 20,
-        vx: (Math.random() - 0.5) * 1.5,
-        vy: 2 * settings.ballSpeedMultiplier,
+        vx: (Math.random() - 0.5) * 3,
+        vy: 1 * settings.ballSpeedMultiplier,
         r: 12,
         landed: false
     });
@@ -64,11 +91,9 @@ export function updateSettings(s) {
 function gameLoop() {
     const W = canvas.width, H = canvas.height;
 
-    // White background
     ctx.fillStyle = "#F5F5F5";
     ctx.fillRect(0, 0, W, H);
 
-    // Draw slots
     const slotColors = ["#FFD700", "#FFA500", "#FF6347", "#90EE90", "#00CED1", "#90EE90", "#FF6347", "#FFA500", "#FFD700"];
     slots.forEach((s, i) => {
         ctx.fillStyle = slotColors[i];
@@ -79,7 +104,6 @@ function gameLoop() {
         ctx.fillText(`${s.multiplier}x`, s.x + s.w / 2, s.y + 25);
     });
 
-    // Draw pegs
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -87,7 +111,6 @@ function gameLoop() {
         ctx.fill();
     });
 
-    // Update + draw balls
     balls = balls.filter(b => {
         if (b.landed) return false;
 
@@ -96,7 +119,6 @@ function gameLoop() {
         b.x += b.vx;
         b.y += b.vy;
 
-        // Peg collisions
         pegs.forEach(p => {
             const dx = b.x - p.x, dy = b.y - p.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -106,18 +128,17 @@ function gameLoop() {
                 b.x += nx * overlap;
                 b.y += ny * overlap;
                 const dot = b.vx * nx + b.vy * ny;
-                b.vx -= 2 * dot * nx * settings.restitution;
-                b.vy -= 2 * dot * ny * settings.restitution;
-                b.vy = Math.abs(b.vy) * settings.ballSpeedMultiplier;
-                b.vx += (Math.random() - 0.5) * 0.5;
+                b.vx -= 2 * dot * nx;
+                b.vy -= 2 * dot * ny;
+                b.vx *= settings.restitution;
+                b.vy *= settings.restitution;
+                b.vx += (Math.random() - 0.5) * 2.5;
             }
         });
 
-        // Wall bounce
         if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); }
         if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
 
-        // Slot detection
         if (b.y + b.r >= slots[0].y) {
             const slot = slots.find(s => b.x >= s.x && b.x < s.x + s.w);
             if (slot) {
@@ -127,7 +148,6 @@ function gameLoop() {
             }
         }
 
-        // Draw ball as image, fallback to circle
         if (ballImage.complete && ballImage.naturalWidth > 0) {
             const aspectRatio = ballImage.naturalWidth / ballImage.naturalHeight;
             const h = b.r * 2;
