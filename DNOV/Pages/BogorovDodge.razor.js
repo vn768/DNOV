@@ -211,7 +211,7 @@ function attachInput() {
     const onStart = () => {
         startGame();
         if (state.els.music && state.els.music.paused) {
-            state.els.music.play().catch(() => { /* ignore if blocked */ });
+            state.els.music.play().catch((err) => { console.error('Music play() failed:', err); });
         }
     };
     els.startBtn.addEventListener('click', onStart);
@@ -766,8 +766,7 @@ function render() {
     drawPlayer();
 }
 
-export function dispose()
-{
+export function dispose() {
     if (!state) return;
     cancelAnimationFrame(state.rafId);
     state.resizeObserver?.disconnect();
