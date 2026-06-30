@@ -19,7 +19,16 @@
             <span class="dodge-hud-label">Best</span>
             <span class="dodge-besttime">@FormatTime(_progress.BestTimeMs)</span>
         </div>
+        <div class="dodge-hud-item dodge-volume">
+            <span class="dodge-hud-label">Music</span>
+            <div class="dodge-volume-row">
+                <span class="dodge-volume-icon">🔊</span>
+                <input type="range" id="dodgeVolumeSlider" class="dodge-volume-slider" min="0" max="100" value="50" />
+            </div>
+        </div>
     </div>
+
+    <audio id="dodgeMusic" src="/audio/audio1.mp3" loop preload="auto"></audio>
 
     <div class="dodge-canvas-wrap">
         <canvas @ref="_canvasRef" id="dodgeCanvas"></canvas>

@@ -5,6 +5,23 @@
 let state = null;
 
 const STORAGE_KEY = 'dodgeArenaProgress';
+const VOLUME_KEY = 'dodgeArenaVolume';
+
+function loadVolume() {
+    try {
+        const raw = localStorage.getItem(VOLUME_KEY);
+        const v = raw === null ? 50 : parseInt(raw, 10);
+        return Number.isFinite(v) ? Math.min(Math.max(v, 0), 100) : 50;
+    } catch {
+        return 50;
+    }
+}
+
+function saveVolume(v) {
+    try {
+        localStorage.setItem(VOLUME_KEY, String(v));
+    } catch { /* ignore quota / privacy-mode errors */ }
+}
 
 function loadProgress() {
     try {
@@ -47,6 +64,8 @@ export async function init(canvas, dotNetRef, achievementDefs) {
         toastContainer: document.getElementById('dodgeToasts'),
         joystickBase: document.getElementById('dodgeJoystickBase'),
         joystickKnob: document.getElementById('dodgeJoystickKnob'),
+        music: document.getElementById('dodgeMusic'),
+        volumeSlider: document.getElementById('dodgeVolumeSlider'),
     };
 
     const progress = loadProgress();
@@ -85,6 +104,7 @@ export async function init(canvas, dotNetRef, achievementDefs) {
     state.playerSkin.onload = () => { if (state) state.playerSkinLoaded = true; };
     state.playerSkin.src = '/images/pgit-logo.png';
     attachInput();
+    setupMusic();
 
     els.startOverlay.style.display = 'flex';
     els.gameOverOverlay.style.display = 'none';
@@ -100,6 +120,27 @@ export async function init(canvas, dotNetRef, achievementDefs) {
         bestTimeMs: state.bestTimeMs,
         unlocked: Array.from(state.unlocked),
     };
+}
+
+function setupMusic() {
+    const { els } = state;
+    if (!els.music || !els.volumeSlider) return;
+
+    // `loop` attribute on the <audio> element already makes it restart
+    // automatically when the track ends, so no 'ended' handler is needed.
+    els.music.loop = true;
+
+    const savedVolume = loadVolume();
+    els.volumeSlider.value = String(savedVolume);
+    els.music.volume = savedVolume / 100;
+
+    const onVolumeInput = (e) => {
+        const v = Number(e.target.value);
+        els.music.volume = v / 100;
+        saveVolume(v);
+    };
+    els.volumeSlider.addEventListener('input', onVolumeInput);
+    state.listeners.push(['input', onVolumeInput, els.volumeSlider]);
 }
 
 function attachInput() {
@@ -167,7 +208,12 @@ function attachInput() {
         ['touchcancel', onJoyEnd, window],
     );
 
-    const onStart = () => startGame();
+    const onStart = () => {
+        startGame();
+        if (state.els.music && state.els.music.paused) {
+            state.els.music.play().catch(() => { /* ignore if blocked */ });
+        }
+    };
     els.startBtn.addEventListener('click', onStart);
     els.restartBtn.addEventListener('click', onStart);
     state.listeners.push(['click', onStart, els.startBtn], ['click', onStart, els.restartBtn]);
@@ -720,10 +766,12 @@ function render() {
     drawPlayer();
 }
 
-export function dispose() {
+export function dispose()
+{
     if (!state) return;
     cancelAnimationFrame(state.rafId);
     state.resizeObserver?.disconnect();
+    state.els.music?.pause();
     for (const [evt, fn, target] of state.listeners) {
         target.removeEventListener(evt, fn);
     }
