@@ -194,6 +194,7 @@ main[b-50s9xqf60r] {
     display: flex;
     gap: 1.5rem;
     margin-bottom: 0.75rem;
+    align-items: flex-end;
 }
 
 .dodge-hud-item[b-o6h5v35j9z] {
@@ -356,39 +357,90 @@ main[b-50s9xqf60r] {
     margin-top: 1.5rem;
 }
 
-    .dodge-achievements h3[b-o6h5v35j9z] {
-        margin: 0 0 0.6rem;
-        font-size: 1rem;
-        color: #c9cde0;
+.dodge-volume[b-o6h5v35j9z] {
+    margin-left: auto;
+}
+
+.dodge-volume-row[b-o6h5v35j9z] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dodge-volume-icon[b-o6h5v35j9z] {
+    font-size: 0.9rem;
+}
+
+.dodge-volume-slider[b-o6h5v35j9z] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 110px;
+    height: 4px;
+    border-radius: 999px;
+    background: #2a2f48;
+    cursor: pointer;
+    outline: none;
+}
+
+    .dodge-volume-slider[b-o6h5v35j9z]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #5dd3ff, #c77dff);
+        border: none;
+        cursor: pointer;
     }
 
-    .dodge-achievements ul[b-o6h5v35j9z] {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 0.6rem;
+    .dodge-volume-slider[b-o6h5v35j9z]::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #5dd3ff, #c77dff);
+        border: none;
+        cursor: pointer;
     }
 
-    .dodge-achievements li[b-o6h5v35j9z] {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        padding: 0.55rem 0.7rem;
-        border-radius: 10px;
-        border: 1px solid #262b42;
-        background: #11142277;
+    .dodge-volume-slider[b-o6h5v35j9z]::-moz-range-track {
+        height: 4px;
+        border-radius: 999px;
+        background: #2a2f48;
     }
 
-        .dodge-achievements li.unlocked[b-o6h5v35j9z] {
-            border-color: #ffd35d55;
-            background: #2a230f55;
-        }
+.dodge-achievements h3[b-o6h5v35j9z] {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    color: #c9cde0;
+}
 
-        .dodge-achievements li.locked[b-o6h5v35j9z] {
-            opacity: 0.55;
-        }
+.dodge-achievements ul[b-o6h5v35j9z] {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.6rem;
+}
+
+.dodge-achievements li[b-o6h5v35j9z] {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid #262b42;
+    background: #11142277;
+}
+
+    .dodge-achievements li.unlocked[b-o6h5v35j9z] {
+        border-color: #ffd35d55;
+        background: #2a230f55;
+    }
+
+    .dodge-achievements li.locked[b-o6h5v35j9z] {
+        opacity: 0.55;
+    }
 
 .dodge-ach-icon[b-o6h5v35j9z] {
     font-size: 1.1rem;
