@@ -1,0 +1,65 @@
+﻿@page "/bogorov-dodge"
+@implements System.IAsyncDisposable
+
+<PageTitle>Dodge Arena</PageTitle>
+
+<div class="dodge-arena">
+
+    <div class="dodge-header">
+        <h1>Dodge Arena</h1>
+        <p>Survive the projectiles, lasers and wall strikes. Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the on-screen joystick.</p>
+    </div>
+
+    <div class="dodge-hud">
+        <div class="dodge-hud-item">
+            <span class="dodge-hud-label">Time Survived</span>
+            <span class="dodge-timer" id="dodgeTimer">00:00.0</span>
+        </div>
+        <div class="dodge-hud-item">
+            <span class="dodge-hud-label">Best</span>
+            <span class="dodge-besttime">@FormatTime(_progress.BestTimeMs)</span>
+        </div>
+    </div>
+
+    <div class="dodge-canvas-wrap">
+        <canvas @ref="_canvasRef" id="dodgeCanvas"></canvas>
+
+        <div class="dodge-toast-container" id="dodgeToasts"></div>
+
+        <div class="dodge-overlay dodge-start-overlay" id="dodgeStartOverlay">
+            <h2>Ready?</h2>
+            <p>Dodge everything. Survive as long as you can.<br />Difficulty ramps up the longer you last.</p>
+            <button class="dodge-btn" id="dodgeStartBtn">Start</button>
+        </div>
+
+        <div class="dodge-overlay dodge-gameover-overlay" id="dodgeGameOverOverlay" style="display:none;">
+            <h2>You Got Hit!</h2>
+            <p id="dodgeGameOverTime"></p>
+            <button class="dodge-btn" id="dodgeRestartBtn">Try Again</button>
+        </div>
+
+        <div class="dodge-joystick" id="dodgeJoystick">
+            <div class="dodge-joystick-base" id="dodgeJoystickBase">
+                <div class="dodge-joystick-knob" id="dodgeJoystickKnob"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dodge-achievements">
+        <h3>Achievements</h3>
+        <ul>
+            @foreach (var a in _achievements)
+            {
+                var unlocked = _progress.Unlocked.Contains(a.Id);
+                <li class="@(unlocked ? "unlocked" : "locked")">
+                    <span class="dodge-ach-icon">@(unlocked ? "🏆" : "🔒")</span>
+                    <div class="dodge-ach-text">
+                        <div class="dodge-ach-title">@a.Title</div>
+                        <div class="dodge-ach-desc">@a.Description</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+
+</div>
