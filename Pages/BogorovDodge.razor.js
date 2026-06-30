@@ -102,7 +102,7 @@ export async function init(canvas, dotNetRef, achievementDefs) {
     state.playerSkin = new Image();
     state.playerSkinLoaded = false;
     state.playerSkin.onload = () => { if (state) state.playerSkinLoaded = true; };
-    state.playerSkin.src = '/images/pgit-logo.png';
+    state.playerSkin.src = 'images/pgit-logo.png';
     attachInput();
     setupMusic();
 
