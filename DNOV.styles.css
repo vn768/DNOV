@@ -160,3 +160,246 @@ main[b-50s9xqf60r] {
         overflow-y: auto;
     }
 }
+/* /Pages/BogorovDodge.razor.rz.scp.css */
+.dodge-arena[b-o6h5v35j9z] {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 1rem 1rem 2.5rem;
+    color: #e6e8f0;
+    font-family: inherit;
+}
+
+.dodge-header h1[b-o6h5v35j9z] {
+    margin: 0 0 0.25rem;
+    font-size: 1.8rem;
+    letter-spacing: 0.02em;
+}
+
+.dodge-header p[b-o6h5v35j9z] {
+    margin: 0 0 1rem;
+    color: #9aa0b4;
+    font-size: 0.95rem;
+}
+
+.dodge-header kbd[b-o6h5v35j9z] {
+    background: #1d2236;
+    border: 1px solid #343a55;
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin: 0 1px;
+    font-size: 0.8rem;
+}
+
+.dodge-hud[b-o6h5v35j9z] {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dodge-hud-item[b-o6h5v35j9z] {
+    display: flex;
+    flex-direction: column;
+}
+
+.dodge-hud-label[b-o6h5v35j9z] {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6f7591;
+}
+
+.dodge-timer[b-o6h5v35j9z] {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #5dd3ff;
+    font-variant-numeric: tabular-nums;
+}
+
+.dodge-besttime[b-o6h5v35j9z] {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #c77dff;
+    font-variant-numeric: tabular-nums;
+}
+
+.dodge-canvas-wrap[b-o6h5v35j9z] {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #2a2f48;
+    box-shadow: 0 0 0 1px rgba(93, 211, 255, 0.05), 0 12px 40px rgba(0,0,0,0.45);
+    touch-action: none;
+    background: #0a0c16;
+}
+
+    .dodge-canvas-wrap canvas[b-o6h5v35j9z] {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+.dodge-toast-container[b-o6h5v35j9z] {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 5;
+    pointer-events: none;
+    align-items: center;
+}
+
+.dodge-toast[b-o6h5v35j9z] {
+    background: rgba(20, 23, 38, 0.92);
+    border: 1px solid #ffd35d;
+    color: #ffe8a3;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+}
+
+    .dodge-toast.show[b-o6h5v35j9z] {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+.dodge-overlay[b-o6h5v35j9z] {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.6rem;
+    background: rgba(8, 9, 17, 0.78);
+    backdrop-filter: blur(2px);
+    z-index: 6;
+    padding: 1.5rem;
+}
+
+    .dodge-overlay h2[b-o6h5v35j9z] {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .dodge-overlay p[b-o6h5v35j9z] {
+        margin: 0;
+        color: #aab0c6;
+        font-size: 0.9rem;
+    }
+
+.dodge-btn[b-o6h5v35j9z] {
+    margin-top: 0.5rem;
+    padding: 0.6rem 1.6rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #5dd3ff, #c77dff);
+    color: #0a0c16;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .dodge-btn:hover[b-o6h5v35j9z] {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(93, 211, 255, 0.35);
+    }
+
+.dodge-joystick[b-o6h5v35j9z] {
+    position: absolute;
+    left: 22px;
+    bottom: 22px;
+    z-index: 7;
+    display: none;
+}
+
+@media (pointer: coarse) {
+    .dodge-joystick[b-o6h5v35j9z] {
+        display: block;
+    }
+}
+
+.dodge-joystick-base[b-o6h5v35j9z] {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dodge-joystick-knob[b-o6h5v35j9z] {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(93, 211, 255, 0.55);
+    border: 1px solid rgba(93, 211, 255, 0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.dodge-achievements[b-o6h5v35j9z] {
+    margin-top: 1.5rem;
+}
+
+    .dodge-achievements h3[b-o6h5v35j9z] {
+        margin: 0 0 0.6rem;
+        font-size: 1rem;
+        color: #c9cde0;
+    }
+
+    .dodge-achievements ul[b-o6h5v35j9z] {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0.6rem;
+    }
+
+    .dodge-achievements li[b-o6h5v35j9z] {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0.7rem;
+        border-radius: 10px;
+        border: 1px solid #262b42;
+        background: #11142277;
+    }
+
+        .dodge-achievements li.unlocked[b-o6h5v35j9z] {
+            border-color: #ffd35d55;
+            background: #2a230f55;
+        }
+
+        .dodge-achievements li.locked[b-o6h5v35j9z] {
+            opacity: 0.55;
+        }
+
+.dodge-ach-icon[b-o6h5v35j9z] {
+    font-size: 1.1rem;
+}
+
+.dodge-ach-title[b-o6h5v35j9z] {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.dodge-ach-desc[b-o6h5v35j9z] {
+    font-size: 0.72rem;
+    color: #9aa0b4;
+}
