@@ -10,7 +10,6 @@ export function init(canvasId, ref) {
     ctx = canvas.getContext("2d");
     balls = [];
 
-    // Fit canvas to its rendered CSS width
     const cssWidth = canvas.clientWidth || 480;
     const scale = cssWidth / 480;
     canvas.width = Math.round(480 * scale);
@@ -18,7 +17,6 @@ export function init(canvasId, ref) {
 
     buildBoard();
 
-    // Touch support — drop ball at tapped X position
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         const rect = canvas.getBoundingClientRect();
@@ -27,7 +25,6 @@ export function init(canvasId, ref) {
         dropBall(touchX);
     }, { passive: false });
 
-    // Resize observer — rebuild board if canvas size changes
     const ro = new ResizeObserver(() => {
         const w = canvas.clientWidth;
         if (!w || w === canvas.width) return;
