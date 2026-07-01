@@ -170,8 +170,8 @@
 
 .dodge-joystick-base {
     position: relative;
-    width: 110px;
-    height: 110px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -181,8 +181,8 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 46px;
-    height: 46px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: rgba(93, 211, 255, 0.55);
     border: 1px solid rgba(93, 211, 255, 0.9);

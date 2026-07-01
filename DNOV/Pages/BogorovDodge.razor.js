@@ -218,6 +218,57 @@ function attachInput() {
     els.restartBtn.addEventListener('click', onStart);
     state.listeners.push(['click', onStart, els.startBtn], ['click', onStart, els.restartBtn]);
 
+    // --- enforce horizontal (landscape) play on mobile ---
+    // When the device is in portrait, hide the on-screen joystick and prevent starting the game.
+    state.isLandscape = true;
+    state._origStartText = els.startBtn.textContent;
+    const joystickWrap = document.getElementById('dodgeJoystick');
+
+    const isLandscape = () => {
+        try {
+            if (window.matchMedia) {
+                return window.matchMedia('(orientation: landscape)').matches || window.innerWidth > window.innerHeight;
+            }
+            return window.innerWidth > window.innerHeight;
+        } catch (err) {
+            return window.innerWidth > window.innerHeight;
+        }
+    };
+
+    const updateOrientationUI = () => {
+        const ok = isLandscape();
+        state.isLandscape = ok;
+        if (!ok) {
+            // portrait: hide joystick, disable start
+            if (joystickWrap) joystickWrap.style.display = 'none';
+            els.startBtn.disabled = true;
+            els.startBtn.textContent = 'Rotate device to play';
+            // ensure the start overlay is visible so user sees the message
+            els.startOverlay.style.display = 'flex';
+        } else {
+            if (joystickWrap) joystickWrap.style.display = '';
+            els.startBtn.disabled = false;
+            els.startBtn.textContent = state._origStartText || 'Start';
+        }       
+    };
+
+    // wire start/restart to the original onStart handler and register for cleanup
+    // remove any existing click listeners for start/restart (defensive)
+    try { els.startBtn.removeEventListener('click', onStart); } catch (e) { }
+    try { els.restartBtn.removeEventListener('click', onStart); } catch (e) { }
+    els.startBtn.addEventListener('click', onStart);
+    els.restartBtn.addEventListener('click', onStart);
+    state.listeners.push(['click', onStart, els.startBtn], ['click', onStart, els.restartBtn]);
+
+    // listen for orientation/resize changes
+    const onOrientChange = () => updateOrientationUI();
+    window.addEventListener('orientationchange', onOrientChange);
+    window.addEventListener('resize', onOrientChange);
+    state.listeners.push(['orientationchange', onOrientChange, window], ['resize', onOrientChange, window]);
+
+    // initialize UI according to current orientation
+    updateOrientationUI();
+
     const onVis = () => {
         if (!state) return;
         if (document.hidden) {
@@ -344,7 +395,7 @@ function handleSpawning(dt) {
     const projInterval = Math.max(1.5 - tier * 0.09, 0.4);
     if (acc.projectile >= projInterval) {
         acc.projectile = 0;
-        const burst = 4; // spawn several projectiles per wave instead of one
+        const burst = 3; // spawn several projectiles per wave instead of one
         for (let i = 0; i < burst; i++) {
             spawnProjectile(tier);
         }
@@ -381,7 +432,7 @@ function biasedNear(min, max, target, spread) {
 }
 
 function spawnProjectile(tier) {
-    const speedMult = 1 + tier * 0.07;
+    const speedMult = 1 + tier * 0.04;
     const shapes = ['circle', 'square', 'triangle'];
     const shape = choice(shapes);
     const radius = rand(8, 18);
@@ -395,9 +446,9 @@ function spawnProjectile(tier) {
         default: x = -radius; y = rand(0, h); break;           // left
     }
 
-    // aim roughly at the player, with spread so it's not a guaranteed hit
+  
     const targetAngle = Math.atan2(state.player.y - y, state.player.x - x);
-    const spread = (Math.random() - 0.5) * (Math.PI / 2.3);
+    const spread = (Math.random() - 0.3) * (Math.PI / 2.3);
     const angle = targetAngle + spread;
     const speed = rand(160, 240) * speedMult;
 
@@ -408,7 +459,7 @@ function spawnProjectile(tier) {
         rotation: 0,
         rotSpeed: rand(-3, 3),
         color: choice(['#ff5d73', '#ff9f5d', '#c77dff', '#5dd3ff']),
-        bouncesLeft: Math.random() < 0.3 ? 5 : 0, // ~30% of shapes can bounce off walls
+        bouncesLeft: Math.random() < 0.10 ? 5 : 0, 
     });
 }
 
@@ -435,7 +486,7 @@ function spawnWallObject(tier) {
     const holdDur = Math.max(0.85 - tier * 0.04, 0.35);
     const retractDur = 0.3;
     const w = state.width, h = state.height;
-    const spread = 120; // how close to the player it's allowed to land along the wall
+    const spread = 120; 
     let rect, depth;
     if (wall === 0) { // top
         depth = h * rand(0.5, 0.62);
@@ -497,7 +548,7 @@ function updateLasers(dt) {
                 l.phase = 'firing';
                 l.timer = l.firingDur;
             } else {
-                return false; // done firing, remove
+                return false; 
             }
         }
         return true;

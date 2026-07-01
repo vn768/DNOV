@@ -11,18 +11,16 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
     private IJSObjectReference? _module;
     private DotNetObjectReference<BogorovDodge>? _selfRef;
     private DodgeProgress _progress = new();
-
     private sealed record AchievementDef(string Id, string Title, string Description, int ThresholdSeconds);
-
     private readonly List<AchievementDef> _achievements = new()
     {
-        new("quick_reflexes", "Quick Reflexes",     "Survive 15 seconds",  15),
-        new("warmed_up",      "Getting Warmed Up",  "Survive 30 seconds",  30),
-        new("one_minute",     "One Minute Wonder",  "Survive 1 minute",    60),
-        new("dodge_master",   "Dodge Master",       "Survive 2 minutes",   120),
-        new("untouchable",    "Untouchable",        "Survive 3 minutes",   180),
-        new("survivor",       "Survivor",           "Survive 5 minutes",   300),
-        new("legend",         "Legend",             "Survive 10 minutes",  600),
+        new("quick_reflexes", "15 seconds",     "Survive 15 seconds",  15),
+        new("warmed_up",      "30 seconds",  "Survive 30 seconds",  30),
+        new("one_minute",     "1 minutes",  "Survive 1 minute",    60),
+        new("dodge_master",   "2 minutes",       "Survive 2 minutes",   120),
+        new("untouchable",    "3 minutes",        "Survive 3 minutes",   180),
+        new("survivor",       "5 minutes",           "Survive 5 minutes",   300),
+        new("legend",         "10 minutes",             "Survive 10 minutes",  600),
     };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -39,8 +37,6 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
         _progress = await _module.InvokeAsync<DodgeProgress>("init", _canvasRef, _selfRef, thresholds);
         StateHasChanged();
     }
-
-    /// <summary>Called from JS the instant an achievement threshold is crossed.</summary>
     [JSInvokable]
     public Task OnAchievementUnlocked(string id)
     {
@@ -50,8 +46,6 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
         }
         return Task.CompletedTask;
     }
-
-    /// <summary>Called from JS when the run ends, so the Blazor side can track best time too.</summary>
     [JSInvokable]
     public Task OnGameOver(double survivedSeconds)
     {
@@ -63,7 +57,6 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
         StateHasChanged();
         return Task.CompletedTask;
     }
-
     private static string FormatTime(double ms)
     {
         var totalSeconds = ms / 1000.0;
@@ -71,7 +64,6 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
         var seconds = totalSeconds - (minutes * 60);
         return $"{minutes:00}:{seconds:00.0}";
     }
-
     public async ValueTask DisposeAsync()
     {
         _selfRef?.Dispose();
@@ -84,13 +76,12 @@ public partial class BogorovDodge : ComponentBase, IAsyncDisposable
             }
             catch (JSDisconnectedException)
             {
-                // circuit already gone (Blazor Server) — nothing to clean up
+
             }
 
             await _module.DisposeAsync();
         }
     }
-
     private sealed class DodgeProgress
     {
         public double BestTimeMs { get; set; }
