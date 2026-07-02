@@ -160,6 +160,317 @@ main[b-50s9xqf60r] {
         overflow-y: auto;
     }
 }
+/* /Pages/BogorocRhytm.razor.rz.scp.css */
+:root[b-177gndhoip] {
+    --game-width: 520px;
+    --game-height: 680px;
+}
+
+.page-wrap[b-177gndhoip] {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    background: #0b0b12;
+}
+
+.rhythm-container[b-177gndhoip] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.rhythm-header[b-177gndhoip] {
+    width: min(var(--game-width), 92vw);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hud-box[b-177gndhoip] {
+    background: #181825;
+    border: 2px solid #4b4b70;
+    border-radius: 12px;
+    min-width: 120px;
+    padding: 12px 20px;
+    text-align: center;
+}
+
+.hud-label[b-177gndhoip] {
+    color: #bfc5ff;
+    font-size: 14px;
+}
+
+.hud-value[b-177gndhoip] {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.mode-box[b-177gndhoip] {
+    background: #4a63ff;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 22px;
+}
+
+.back-btn[b-177gndhoip] {
+    background: #1a1a2a;
+    border: 1px solid #2a2a40;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: border-color 0.15s ease;
+}
+
+    .back-btn:hover[b-177gndhoip] {
+        border-color: #5b63a8;
+    }
+
+.canvas-wrap[b-177gndhoip] {
+    position: relative;
+    width: min(560px, 90vw);
+    height: min(720px, 78vh);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 3px solid #5b63a8;
+    background: linear-gradient( to bottom, #303050, #1b1b30, #111119 );
+    box-shadow: 0 0 30px rgba(90,120,255,.35);
+}
+
+#rhythmCanvas[b-177gndhoip] {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.game-overlay[b-177gndhoip] {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.glow-top[b-177gndhoip] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient( rgba(255,255,255,.18), transparent );
+}
+
+.instructions[b-177gndhoip] {
+    width: min(var(--game-width), 92vw);
+    background: #181825;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 18px;
+}
+
+kbd[b-177gndhoip] {
+    background: #444;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+/* ---- Map selection screen ---- */
+
+.map-select[b-177gndhoip] {
+    text-align: center;
+    color: white;
+    padding: 60px 20px;
+    min-height: calc(100vh - 60px);
+    background: radial-gradient(ellipse at 50% -10%, rgba(90,120,255,.25), transparent 60%), #0b0b12;
+}
+
+    .map-select h2[b-177gndhoip] {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: #9aa0d4;
+        margin-bottom: 36px;
+    }
+
+.map-grid[b-177gndhoip] {
+    display: flex;
+    gap: 22px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.map-card[b-177gndhoip] {
+    position: relative;
+    width: 200px;
+    background: #14141f;
+    border: 1px solid #2a2a40;
+    border-radius: 16px;
+    padding: 28px 20px 22px;
+    color: white;
+    cursor: pointer;
+    overflow: hidden;
+    text-align: left;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.map-card-top[b-177gndhoip] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent);
+}
+
+.map-title[b-177gndhoip] {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    margin-top: 6px;
+    margin-bottom: 22px;
+}
+
+.map-cta[b-177gndhoip] {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6c7299;
+    margin-top: 18px;
+}
+
+.eq-bars[b-177gndhoip] {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 24px;
+}
+
+    .eq-bars span[b-177gndhoip] {
+        display: block;
+        width: 5px;
+        height: 6px;
+        border-radius: 2px;
+        background: var(--accent);
+        opacity: 0.55;
+        transform-origin: bottom;
+    }
+
+.map-card:hover[b-177gndhoip] {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+    .map-card:hover .eq-bars span[b-177gndhoip] {
+        opacity: 1;
+        animation: eq-bounce-b-177gndhoip 0.9s ease-in-out infinite;
+    }
+
+        .map-card:hover .eq-bars span:nth-child(1)[b-177gndhoip] {
+            animation-delay: 0s;
+        }
+
+        .map-card:hover .eq-bars span:nth-child(2)[b-177gndhoip] {
+            animation-delay: 0.15s;
+        }
+
+        .map-card:hover .eq-bars span:nth-child(3)[b-177gndhoip] {
+            animation-delay: 0.3s;
+        }
+
+        .map-card:hover .eq-bars span:nth-child(4)[b-177gndhoip] {
+            animation-delay: 0.1s;
+        }
+
+@keyframes eq-bounce-b-177gndhoip {
+    0%, 100% {
+        height: 6px;
+    }
+
+    50% {
+        height: 24px;
+    }
+}
+
+.map-card:focus-visible[b-177gndhoip] {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.load-error[b-177gndhoip] {
+    margin-top: 28px;
+    display: inline-block;
+    background: #2a1420;
+    border: 1px solid #ff5d8f;
+    color: #ffb3c9;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .map-card[b-177gndhoip], .map-card:hover[b-177gndhoip] {
+        transition: none;
+    }
+
+        .map-card:hover .eq-bars span[b-177gndhoip] {
+            animation: none;
+            height: 18px;
+        }
+}
+
+@media (max-height: 900px) {
+
+    :root[b-177gndhoip] {
+        --game-width: 460px;
+        --game-height: 580px;
+    }
+
+    .hud-value[b-177gndhoip] {
+        font-size: 28px;
+    }
+
+    .instructions[b-177gndhoip] {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 800px) {
+
+    :root[b-177gndhoip] {
+        --game-width: 90vw;
+        --game-height: 62vh;
+    }
+
+    .rhythm-header[b-177gndhoip] {
+        width: min(560px, 90vw);
+    }
+
+    .instructions[b-177gndhoip] {
+        width: min(560px, 90vw);
+    }
+
+    .hud-box[b-177gndhoip] {
+        min-width: 90px;
+    }
+
+    .mode-box[b-177gndhoip] {
+        font-size: 18px;
+        padding: 10px 18px;
+    }
+}
 /* /Pages/BogorovDodge.razor.rz.scp.css */
 .dodge-arena[b-o6h5v35j9z] {
     max-width: 880px;
