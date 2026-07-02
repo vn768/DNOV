@@ -1,0 +1,79 @@
+﻿@page "/bogorov-rhythm"
+
+<div class="page-wrap">
+
+    @if (!GameStarted)
+    {
+        <div class="map-select">
+            <h2>Choose a Song</h2>
+
+            <div class="map-grid">
+                @{
+                    var accentColors = new[] { "#ff5d8f", "#ffd447", "#5dc8ff" };
+                }
+                @for (int i = 0; i < AvailableMaps.Count; i++)
+                {
+                    var map = AvailableMaps[i];
+                    var accent = accentColors[i % accentColors.Length];
+
+                    <button class="map-card" style="--accent:@accent" @onclick="() => SelectMap(map)">
+                        <div class="map-card-top"></div>
+                        <div class="map-title">@map.Title</div>
+                        <div class="eq-bars" aria-hidden="true">
+                            <span></span><span></span><span></span><span></span>
+                        </div>
+                        <div class="map-cta">Tap to play</div>
+                    </button>
+                }
+            </div>
+
+            @if (LoadError != null)
+            {
+                <div class="load-error">@LoadError</div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="rhythm-container">
+
+            <div class="rhythm-header">
+                <button class="back-btn" @onclick="BackToMenu">← Menu</button>
+
+                <div class="hud-box">
+                    <div class="hud-label">Score</div>
+                    <div class="hud-value">0</div>
+                </div>
+
+                <div class="mode-box">
+                    NOTES
+                </div>
+
+                <div class="hud-box">
+                    <div class="hud-label">Combo</div>
+                    <div class="hud-value">0</div>
+                </div>
+            </div>
+
+            <div class="canvas-wrap">
+                <canvas id="rhythmCanvas"></canvas>
+
+                <div class="game-overlay">
+                    <div class="glow-top"></div>
+                </div>
+            </div>
+
+            @if (CurrentMap != null && !string.IsNullOrEmpty(CurrentMap.AudioFile))
+            {
+                <audio @ref="_audioRef" src="@("audio/" + CurrentMap.AudioFile)" preload="auto"></audio>
+            }
+
+            <div class="instructions">
+                Press <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to hit notes.
+                Tap bubbles, spin circles, and drag paths to score extra combo.
+            </div>
+
+        </div>
+    }
+
+</div>
