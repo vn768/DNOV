@@ -395,7 +395,7 @@ function handleSpawning(dt) {
     const projInterval = Math.max(1.5 - tier * 0.09, 0.4);
     if (acc.projectile >= projInterval) {
         acc.projectile = 0;
-        const burst = 3; // spawn several projectiles per wave instead of one
+        const burst = 4; // spawn several projectiles per wave instead of one
         for (let i = 0; i < burst; i++) {
             spawnProjectile(tier);
         }
