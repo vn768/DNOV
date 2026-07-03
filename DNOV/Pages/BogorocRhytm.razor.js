@@ -13,15 +13,22 @@ export class BogorocRhytm {
         this.audioEl = audioEl || null;
         this.dotNetRef = dotNetRef || null;
 
+        // Song volume, 0-1. Kept as its own field (rather than just reading
+        // audioEl.volume) so it survives even before/without an audio
+        // element, and so bindVolumeSlider() has a single source of truth.
+        this.volume = this.audioEl ? this.audioEl.volume : 1;
+
         this.score = 0;
         this.combo = 0;
         this.maxCombo = 0;
+        this.misses = 0;
         this.ghostTaps = 0;
 
         this.startTime = null;
         this.activeBubble = null;
         this.popups = [];
         this.ghostFlashes = [];
+        this.bubbleBursts = [];
         this.disposed = false;
         this.finished = false;
 
@@ -47,9 +54,10 @@ export class BogorocRhytm {
         this.DRAG_R = 32 * scaleFactor;
         this.HOLD_WIDTH = 40 * scaleFactor;
 
-        // Hit-line rings now closely match the falling note size instead of
-        // ballooning out to +12px.
-        this.HIT_RING_R = this.NOTE_R + 6;
+        // Hit-line rings are now exactly the same radius as the falling
+        // notes, so the "socket" a note drops into is the same size as the
+        // note itself instead of being larger than it.
+        this.HIT_RING_R = this.NOTE_R;
 
         this.WINDOWS = [
             { name: "PERFECT", max: 60, score: 100, color: "#ffd447" },
@@ -62,7 +70,15 @@ export class BogorocRhytm {
         this.bubbles = structuredClone(this.map.bubbles || []);
         this.segments = structuredClone(this.map.segments || []);
 
-        this.FREESTYLE_LEAD_MS = 700;
+        // How long before a freestyle segment the keyboard notes start
+        // dissolving away. Longer than the note travel time so the fade
+        // reads as a deliberate wind-down rather than a last-second cut.
+        this.FREESTYLE_LEAD_MS = 1300;
+
+        // How long after a freestyle segment ends the keyboard notes take
+        // to fade back in. Mirrors FREESTYLE_LEAD_MS so the return to
+        // keyboard play feels like the reverse of the wind-down.
+        this.FREESTYLE_FADEIN_MS = 1300;
 
         this.DURATION = this.map.durationMs || this.computeDuration();
 
@@ -102,6 +118,43 @@ export class BogorocRhytm {
         }
     }
 
+    // ---- volume control ----
+
+    // fraction is 0 (silent) to 1 (full volume).
+    setVolume(fraction) {
+        const v = Math.min(1, Math.max(0, Number(fraction) || 0));
+        this.volume = v;
+        if (this.audioEl) this.audioEl.volume = v;
+    }
+
+    getVolume() {
+        return this.volume;
+    }
+
+    // Wires up an existing <input type="range"> element as the song's
+    // volume slider. Works with any min/max/step the slider declares
+    // (e.g. 0-1 with step="0.01", or the more common 0-100) - the actual
+    // range is read off the element itself and mapped to a 0-1 fraction.
+    // Safe to call any time after construction, before or after start().
+    bindVolumeSlider(sliderId) {
+        const slider = document.getElementById(sliderId);
+        if (!slider) return;
+
+        this._volumeSlider = slider;
+
+        const min = Number(slider.min) || 0;
+        const max = Number(slider.max) || 1;
+        const toFraction = (raw) => (max === min) ? 1 : (Number(raw) - min) / (max - min);
+        const fromFraction = (frac) => min + frac * (max - min);
+
+        // Reflect whatever volume is already set (e.g. from a saved
+        // preference) onto the slider's own scale.
+        slider.value = fromFraction(this.volume);
+
+        this._onVolumeInput = () => this.setVolume(toFraction(slider.value));
+        slider.addEventListener("input", this._onVolumeInput);
+    }
+
     bindInput() {
         window.addEventListener("keydown", this._onKeyDown);
         window.addEventListener("keyup", this._onKeyUp);
@@ -119,6 +172,7 @@ export class BogorocRhytm {
 
     breakCombo() {
         this.combo = 0;
+        this.misses++;
     }
 
     isInFreestyle(t) {
@@ -151,11 +205,24 @@ export class BogorocRhytm {
         let best = null;
         let bestDelta = Infinity;
 
+        // A note only becomes pressable once its circle is within 5px of
+        // touching the hit-line ring - measured edge-to-edge, not
+        // center-to-center. Since the note and the ring share the same
+        // radius (NOTE_R), their edges are `5px` apart once their centers
+        // are `2 * NOTE_R + 5` apart. Convert that pixel distance into the
+        // equivalent time window using the note's fall speed, so this
+        // stays correct regardless of canvas size or a map's travelTimeMs.
+        const pxPerMs = this.HIT_Y / this.TRAVEL_TIME;
+        const maxCenterDistancePx = (2 * this.NOTE_R) + 5;
+        const maxDeltaMs = maxCenterDistancePx / pxPerMs;
+
         for (let n of this.notes) {
             if (n.hit || n.missed) continue;
             if (n.lane !== laneIdx) continue;
 
             let delta = Math.abs(t - n.time);
+            if (delta > maxDeltaMs) continue; // too far from the note space to be pressed at all
+
             if (delta < bestDelta) {
                 best = n;
                 bestDelta = delta;
@@ -163,7 +230,7 @@ export class BogorocRhytm {
         }
 
         if (!best) {
-            // Ghost tap: pressed a lane with nothing nearby to hit. This must
+            // Ghost tap: pressed a lane with nothing close enough to hit. This must
             // NEVER break combo or cost score - it's just visual feedback so
             // the player knows the input registered.
             this.registerGhostTap(laneIdx);
@@ -248,14 +315,22 @@ export class BogorocRhytm {
             }
 
             if (b.type === "drag") {
-                b.holding = true;
-                this.activeBubble = b;
+                // You have to actually grab the knob where it currently sits
+                // (its last-reached waypoint) to start dragging - clicking
+                // anywhere on screen shouldn't pick it up.
+                const anchor = b.path[b.progress || 0];
+                const grabR = this.DRAG_R + 24;
+                if (this.distance(pos.x, pos.y, anchor.x, anchor.y) <= grabR) {
+                    b.holding = true;
+                    b.knobPos = { x: anchor.x, y: anchor.y };
+                    this.activeBubble = b;
+                }
             }
         }
     }
 
     handlePointerMove(e) {
-        if (!this.activeBubble) return;
+        if (!this.activeBubble || this.activeBubble.done) return;
         const pos = this.getPointerPos(e);
 
         if (this.activeBubble.type === "spin") {
@@ -273,18 +348,33 @@ export class BogorocRhytm {
         }
 
         if (this.activeBubble.type === "drag") {
-            const path = this.activeBubble.path;
-            let next = this.activeBubble.progress || 0;
+            const b = this.activeBubble;
+            const path = b.path;
 
-            if (next < path.length - 1) {
-                let target = path[next];
-                if (this.distance(pos.x, pos.y, target.x, target.y) < 50) {
-                    this.activeBubble.progress = next + 1;
+            // The knob now follows the pointer directly so it reads as a
+            // real drag instead of teleporting between waypoints.
+            b.knobPos = { x: pos.x, y: pos.y };
+
+            const progress = b.progress || 0;
+            if (progress < path.length - 1) {
+                // Bug fix: this used to check distance against path[progress]
+                // (the waypoint you're already standing on), which is nearly
+                // always true right after grabbing it - so a single small
+                // move instantly finished the whole path. It now checks
+                // against path[progress + 1], the waypoint you actually have
+                // to travel to next.
+                const target = path[progress + 1];
+                if (this.distance(pos.x, pos.y, target.x, target.y) < 40) {
+                    b.progress = progress + 1;
+                    // Snap cleanly onto the waypoint once reached, rather
+                    // than leaving the knob wherever the pointer happened
+                    // to be when it crossed the threshold.
+                    b.knobPos = { x: target.x, y: target.y };
                 }
             }
 
-            if (this.activeBubble.progress >= path.length - 1) {
-                this.completeBubble(this.activeBubble);
+            if (b.progress >= path.length - 1) {
+                this.completeBubble(b);
             }
         }
     }
@@ -364,9 +454,21 @@ export class BogorocRhytm {
         for (const seg of this.segments) {
             const leadStart = seg.start - this.FREESTYLE_LEAD_MS;
             if (t >= leadStart && t <= seg.start) {
-                fade = Math.min(fade, 1 - (t - leadStart) / this.FREESTYLE_LEAD_MS);
+                const progress = (t - leadStart) / this.FREESTYLE_LEAD_MS;
+                // Smoothstep easing: holds near full opacity a touch longer,
+                // then dissolves away with acceleration rather than a flat
+                // linear fade - reads as a much slower, gentler wind-down.
+                const eased = progress * progress * (3 - 2 * progress);
+                fade = Math.min(fade, 1 - eased);
             } else if (t > seg.start && t < seg.end) {
                 fade = 0;
+            } else if (t >= seg.end && t <= seg.end + this.FREESTYLE_FADEIN_MS) {
+                // Mirror of the lead-out fade: notes dissolve back in over
+                // FREESTYLE_FADEIN_MS once the freestyle segment ends,
+                // instead of snapping straight back to full opacity.
+                const progress = (t - seg.end) / this.FREESTYLE_FADEIN_MS;
+                const eased = progress * progress * (3 - 2 * progress);
+                fade = Math.min(fade, eased);
             }
         }
         return Math.max(0, fade);
@@ -379,6 +481,13 @@ export class BogorocRhytm {
 
         this.ctx.globalAlpha = fade;
 
+        // As a note dissolves (fade < 1) it also eases down a little and
+        // shrinks slightly, instead of just cutting opacity - reads as the
+        // note melting away rather than an abrupt disappearance. Both are
+        // no-ops while fade is 1 (normal play).
+        const dissolveShrink = 0.78 + 0.22 * fade;
+        const dissolveDrift = (1 - fade) * 12;
+
         for (let note of this.notes) {
             if (note.hit && note.type !== "hold") continue;
             if (note.missed || note.done) continue;
@@ -386,18 +495,19 @@ export class BogorocRhytm {
             let lane = this.LANES[note.lane];
 
             if (note.type === "hold") {
-                const headY = this.HIT_Y - ((note.time - t) / this.TRAVEL_TIME) * this.HIT_Y;
+                const headY = this.HIT_Y - ((note.time - t) / this.TRAVEL_TIME) * this.HIT_Y + dissolveDrift;
                 const tailTime = note.time + note.holdMs;
-                const tailY = this.HIT_Y - ((tailTime - t) / this.TRAVEL_TIME) * this.HIT_Y;
+                const tailY = this.HIT_Y - ((tailTime - t) / this.TRAVEL_TIME) * this.HIT_Y + dissolveDrift;
 
                 this.ctx.fillStyle = lane.color + "aa";
                 this.ctx.fillRect(lane.x - this.HOLD_WIDTH / 2, tailY, this.HOLD_WIDTH, headY - tailY);
 
                 if (!note.hit) {
                     this.ctx.beginPath();
-                    this.ctx.arc(lane.x, headY, this.NOTE_R, 0, Math.PI * 2);
+                    this.ctx.arc(lane.x, headY, this.NOTE_R * dissolveShrink, 0, Math.PI * 2);
                     this.ctx.fillStyle = lane.color;
                     this.ctx.fill();
+                    this.drawLabel(lane.x, headY, lane.label, this.NOTE_R * 0.55 * dissolveShrink);
                 }
 
                 const active = this.activeHolds[note.lane];
@@ -407,15 +517,33 @@ export class BogorocRhytm {
                     this.ctx.strokeRect(lane.x - this.HOLD_WIDTH / 2, this.HIT_Y - 6, this.HOLD_WIDTH, 12);
                 }
             } else {
-                let y = this.HIT_Y - ((note.time - t) / this.TRAVEL_TIME) * this.HIT_Y;
+                let y = this.HIT_Y - ((note.time - t) / this.TRAVEL_TIME) * this.HIT_Y + dissolveDrift;
                 this.ctx.beginPath();
-                this.ctx.arc(lane.x, y, this.NOTE_R, 0, Math.PI * 2);
+                this.ctx.arc(lane.x, y, this.NOTE_R * dissolveShrink, 0, Math.PI * 2);
                 this.ctx.fillStyle = lane.color;
                 this.ctx.fill();
+                this.drawLabel(lane.x, y, lane.label, this.NOTE_R * 0.55 * dissolveShrink);
             }
         }
 
         this.ctx.globalAlpha = 1;
+    }
+
+    // Draws bold, high-contrast centered text - used for the A/S/D lane
+    // letters on keyboard notes and the CLICK/SPIN/DRAG labels on bubbles.
+    // A stroke opposite the fill keeps it legible over any note/bubble color.
+    drawLabel(x, y, text, fontSize, fillColor = "#ffffff", strokeColor = "rgba(0,0,0,0.55)") {
+        if (fontSize <= 0) return;
+        this.ctx.save();
+        this.ctx.font = `bold ${fontSize}px sans-serif`;
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        this.ctx.lineWidth = Math.max(2, fontSize * 0.16);
+        this.ctx.strokeStyle = strokeColor;
+        this.ctx.strokeText(text, x, y);
+        this.ctx.fillStyle = fillColor;
+        this.ctx.fillText(text, x, y);
+        this.ctx.restore();
     }
 
     lerpColor(a, b, frac) {
@@ -428,54 +556,257 @@ export class BogorocRhytm {
         return `rgb(${rr},${rg},${rb})`;
     }
 
+    // Draws a small white arrowhead ahead of the drag knob, oriented toward
+    // `target`. Used to tell the player which direction to drag next -
+    // including back toward an earlier point on round-trip paths.
+    drawDragArrow(current, target) {
+        const angle = Math.atan2(target.y - current.y, target.x - current.x);
+        const dist = this.distance(current.x, current.y, target.x, target.y);
+
+        // Sit the arrow just past the knob, but never past the target itself.
+        const arrowDist = Math.min(this.DRAG_R + 26, Math.max(dist - 12, 0));
+        if (arrowDist <= 0) return;
+
+        const ax = current.x + Math.cos(angle) * arrowDist;
+        const ay = current.y + Math.sin(angle) * arrowDist;
+
+        const size = 15;
+        this.ctx.save();
+        this.ctx.translate(ax, ay);
+        this.ctx.rotate(angle);
+        this.ctx.beginPath();
+        this.ctx.moveTo(size, 0);
+        this.ctx.lineTo(-size * 0.6, -size * 0.7);
+        this.ctx.lineTo(-size * 0.6, size * 0.7);
+        this.ctx.closePath();
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.globalAlpha = 0.95;
+        this.ctx.fill();
+        this.ctx.restore();
+    }
+
+    // ---- small easing helpers used to make bubbles feel alive ----
+    smoothstep01(x) {
+        x = Math.max(0, Math.min(1, x));
+        return x * x * (3 - 2 * x);
+    }
+
+    easeOutBack(x) {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+
+    // Scale factor for a bubble's "pop-in" entrance: snaps in with a slight
+    // overshoot over ~220ms rather than appearing instantly at full size.
+    bubbleEntranceScale(b, t) {
+        const age = t - b.time;
+        const dur = 220;
+        if (age >= dur) return 1;
+        if (age <= 0) return 0;
+        return Math.max(0, this.easeOutBack(age / dur));
+    }
+
     drawBubbles() {
-        let t = this.now();
+        const t = this.now();
 
         for (let b of this.bubbles) {
             if (b.done) continue;
             if (t < b.time || t > b.time + b.duration) continue;
 
-            if (b.type === "tap") {
-                this.ctx.beginPath();
-                this.ctx.arc(b.x, b.y, this.TAP_R, 0, Math.PI * 2);
-                this.ctx.fillStyle = "#a855f7";
-                this.ctx.fill();
-            }
+            const entrance = this.bubbleEntranceScale(b, t);
+            // Per-bubble phase offset (derived from its own spawn time) so
+            // multiple bubbles don't all breathe in perfect lockstep.
+            const phase = (b.time % 1000) * 0.01;
+            const breathe = 1 + 0.05 * Math.sin(t / 220 + phase);
+            const scale = entrance * breathe;
 
-            if (b.type === "spin") {
-                const frac = Math.min(1, (b.angleAccum || 0) / (Math.PI * 4));
-                const ringColor = this.lerpColor("#ffffff", "#22c55e", frac);
+            // 1 right when the bubble appears, 0 right as its window closes.
+            const remaining = 1 - Math.min(1, Math.max(0, (t - b.time) / b.duration));
 
-                this.ctx.beginPath();
-                this.ctx.arc(b.x, b.y, this.SPIN_R, 0, Math.PI * 2);
-                this.ctx.strokeStyle = ringColor;
-                this.ctx.lineWidth = 8;
-                this.ctx.stroke();
+            if (b.type === "tap") this.drawTapBubble(b, scale, remaining);
+            if (b.type === "spin") this.drawSpinBubble(b, scale, t);
+            if (b.type === "drag") this.drawDragBubble(b, scale, t);
+        }
+    }
 
-                this.ctx.beginPath();
-                this.ctx.arc(b.x, b.y, 36, 0, Math.PI * 2);
-                this.ctx.fillStyle = ringColor;
-                this.ctx.fill();
-            }
+    drawTapBubble(b, scale, remaining) {
+        const r = this.TAP_R * scale;
+        if (r <= 0) return;
 
-            if (b.type === "drag") {
-                this.ctx.beginPath();
-                for (let i = 0; i < b.path.length; i++) {
-                    const p = b.path[i];
-                    if (i === 0) this.ctx.moveTo(p.x, p.y);
-                    else this.ctx.lineTo(p.x, p.y);
-                }
-                this.ctx.strokeStyle = "rgba(255,255,255,0.7)";
-                this.ctx.lineWidth = 24;
-                this.ctx.stroke();
+        this.ctx.save();
+        this.ctx.shadowColor = "#c084fc";
+        this.ctx.shadowBlur = 22;
 
-                let current = b.path[b.progress || 0];
-                this.ctx.beginPath();
-                this.ctx.arc(current.x, current.y, this.DRAG_R, 0, Math.PI * 2);
-                this.ctx.fillStyle = "#3b82f6";
-                this.ctx.fill();
+        const grad = this.ctx.createRadialGradient(
+            b.x - r * 0.3, b.y - r * 0.3, r * 0.15,
+            b.x, b.y, r
+        );
+        grad.addColorStop(0, "#f3e8ff");
+        grad.addColorStop(0.55, "#a855f7");
+        grad.addColorStop(1, "#6b21a8");
+
+        this.ctx.beginPath();
+        this.ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+        this.ctx.fillStyle = grad;
+        this.ctx.fill();
+        this.ctx.restore();
+
+        this.drawLabel(b.x, b.y, "CLICK", r * 0.32);
+
+        // Approach ring: starts larger than the bubble and shrinks in as its
+        // window runs out, shifting from white to red for urgency - the
+        // same visual language as an osu!-style approach circle.
+        const approachR = r + remaining * r * 0.9;
+        const ringColor = this.lerpColor("#ffffff", "#ff3b5c", 1 - remaining);
+        this.ctx.beginPath();
+        this.ctx.arc(b.x, b.y, approachR, 0, Math.PI * 2);
+        this.ctx.strokeStyle = ringColor;
+        this.ctx.globalAlpha = 0.85;
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1;
+    }
+
+    drawSpinBubble(b, scale, t) {
+        const ringR = this.SPIN_R * scale;
+        if (ringR <= 0) return;
+
+        // The ring starts pure white and eases toward green as the player
+        // accumulates rotation around the bubble; it also thickens and
+        // glows harder the closer they get to finishing the spin.
+        const frac = Math.min(1, (b.angleAccum || 0) / (Math.PI * 4));
+        const ringColor = this.lerpColor("#ffffff", "#22c55e", frac);
+
+        this.ctx.save();
+        this.ctx.shadowColor = ringColor;
+        this.ctx.shadowBlur = 14 + frac * 12;
+        this.ctx.beginPath();
+        this.ctx.arc(b.x, b.y, ringR, 0, Math.PI * 2);
+        this.ctx.strokeStyle = ringColor;
+        this.ctx.lineWidth = 8 + frac * 4;
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Before the player grabs it, three chevrons drift slowly around
+        // the ring hinting at the spin motion, so the bubble doesn't just
+        // sit there looking static while it waits to be touched.
+        if (!b.holding) {
+            const hintAngle = t / 280;
+            for (let i = 0; i < 3; i++) {
+                const a = hintAngle + (i * Math.PI * 2) / 3;
+                this.drawChevron(
+                    b.x + Math.cos(a) * ringR,
+                    b.y + Math.sin(a) * ringR,
+                    a + Math.PI / 2,
+                    ringColor
+                );
             }
         }
+
+        // The bubble itself stays white the whole time - only the ring and
+        // ambient hints communicate spin progress - and gently breathes
+        // via `scale`.
+        this.ctx.beginPath();
+        this.ctx.arc(b.x, b.y, 36 * scale, 0, Math.PI * 2);
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.fill();
+
+        this.drawLabel(b.x, b.y, "SPIN", 36 * scale * 0.42, "#1f2937", "rgba(255,255,255,0.65)");
+    }
+
+    drawChevron(x, y, angle, color) {
+        const size = 10;
+        this.ctx.save();
+        this.ctx.translate(x, y);
+        this.ctx.rotate(angle);
+        this.ctx.beginPath();
+        this.ctx.moveTo(-size * 0.6, -size);
+        this.ctx.lineTo(size * 0.6, 0);
+        this.ctx.lineTo(-size * 0.6, size);
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 3;
+        this.ctx.lineCap = "round";
+        this.ctx.lineJoin = "round";
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
+    drawDragBubble(b, scale, t) {
+        // Guide line: a soft wide base plus an animated "marching ants"
+        // overlay so the path reads as something actively flowing rather
+        // than a static bar. Paths with 3+ points (out -> back) already
+        // read as round-trip; more waypoints along a curve shape make the
+        // line read as curved instead of straight.
+        this.ctx.save();
+        this.ctx.beginPath();
+        for (let i = 0; i < b.path.length; i++) {
+            const p = b.path[i];
+            if (i === 0) this.ctx.moveTo(p.x, p.y);
+            else this.ctx.lineTo(p.x, p.y);
+        }
+        this.ctx.strokeStyle = "rgba(255,255,255,0.32)";
+        this.ctx.lineWidth = 26;
+        this.ctx.stroke();
+
+        this.ctx.setLineDash([18, 14]);
+        this.ctx.lineDashOffset = -t / 18;
+        this.ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        this.ctx.lineWidth = 6;
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        const progress = b.progress || 0;
+        // The knob renders at its live, pointer-tracked position while being
+        // dragged, falling back to its last-reached waypoint before it's
+        // been grabbed at all.
+        const current = b.knobPos || b.path[progress];
+
+        // Direction arrow: points from the current knob position toward the
+        // next waypoint, so the player always knows which way to drag next
+        // - including the "drag back" portion of a round-trip path.
+        const nextIdx = progress + 1;
+        if (nextIdx < b.path.length) {
+            this.drawDragArrow(current, b.path[nextIdx]);
+        }
+
+        const r = this.DRAG_R * scale;
+        if (r <= 0) return;
+
+        this.ctx.save();
+        this.ctx.shadowColor = "#60a5fa";
+        this.ctx.shadowBlur = 18;
+        const grad = this.ctx.createRadialGradient(
+            current.x - r * 0.3, current.y - r * 0.3, r * 0.15,
+            current.x, current.y, r
+        );
+        grad.addColorStop(0, "#dbeafe");
+        grad.addColorStop(0.6, "#3b82f6");
+        grad.addColorStop(1, "#1d4ed8");
+        this.ctx.beginPath();
+        this.ctx.arc(current.x, current.y, r, 0, Math.PI * 2);
+        this.ctx.fillStyle = grad;
+        this.ctx.fill();
+        this.ctx.restore();
+
+        this.drawLabel(current.x, current.y, "DRAG", r * 0.32);
+    }
+
+    // Short-lived expanding ring drawn wherever a bubble was just completed
+    // - a small "pop" of feedback instead of the bubble just vanishing.
+    drawBubbleBursts() {
+        for (const burst of this.bubbleBursts) {
+            const grow = (1 - burst.life) * 55;
+            this.ctx.globalAlpha = burst.life;
+            this.ctx.beginPath();
+            this.ctx.arc(burst.x, burst.y, 18 + grow, 0, Math.PI * 2);
+            this.ctx.strokeStyle = "#ffffff";
+            this.ctx.lineWidth = 4;
+            this.ctx.stroke();
+            burst.life -= 0.06;
+        }
+        this.ctx.globalAlpha = 1;
+        this.bubbleBursts = this.bubbleBursts.filter(x => x.life > 0);
     }
 
     drawSegmentWarnings() {
@@ -531,9 +862,17 @@ export class BogorocRhytm {
         this.ctx.font = "22px sans-serif";
         this.ctx.fillText(`Score: ${this.score}`, 30, 40);
         this.ctx.fillText(`Combo: ${this.combo}`, 30, 75);
+        this.ctx.fillText(`Combo Break: ${this.misses}`, 30, 110);
     }
 
     drawHitLine() {
+        // The hit-ring "sockets" fade out/in in lockstep with the falling
+        // notes, since they're meaningless once the keyboard lanes go
+        // quiet for a freestyle segment.
+        const fade = this.noteFadeFactor(this.now());
+        if (fade <= 0) return;
+
+        this.ctx.globalAlpha = fade;
         for (let lane of this.LANES) {
             this.ctx.beginPath();
             this.ctx.arc(lane.x, this.HIT_Y, this.HIT_RING_R, 0, Math.PI * 2);
@@ -541,6 +880,7 @@ export class BogorocRhytm {
             this.ctx.lineWidth = 3;
             this.ctx.stroke();
         }
+        this.ctx.globalAlpha = 1;
     }
 
     getPointerPos(e) {
@@ -593,6 +933,10 @@ export class BogorocRhytm {
         this.canvas.removeEventListener("click", this._onCanvasClick);
         this.canvas.removeEventListener("pointerdown", this._onPointerDown);
         this.canvas.removeEventListener("pointermove", this._onPointerMove);
+
+        if (this._volumeSlider && this._onVolumeInput) {
+            this._volumeSlider.removeEventListener("input", this._onVolumeInput);
+        }
     }
 }
 
