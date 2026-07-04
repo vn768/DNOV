@@ -285,10 +285,25 @@ export class BogorocRhytm {
             this.breakCombo();
             this.spawnPopup("HOLD BROKEN", "#ff5d8f");
         }
-
-        note.done = true;
-        this.activeHolds[laneIdx] = null;
+            activeDrag.lastAngle = angle;
+            bubble.progress = Math.min(1, activeDrag.accumulated / (2 * Math.PI));
+            if (bubble.progress >= 1 && !bubble.hit) {
+                bubble.hit = true;
+                registerHit(0);
+                activeDrag = null;
     }
+        } else if (bubble.type === "drag" && bubble.fullPath) {
+            // Enforce that the pointer stays on the guide line.
+            const pxPoint = toPx(p);
+            const devPx = distanceToPolylinePx(pxPoint.x, pxPoint.y, bubble.fullPath);
+            console.log(`[BogorocRhytm DEBUG] drag move: p=(${p.x.toFixed(1)},${p.y.toFixed(1)}) devPx=${devPx.toFadixed(1)} (max ${MAX_DRAG_DEVIATION_PX}) pointIndex=${activeDrag.pointIndex}`);
+            if (devPx > MAX_DRAG_DEVIATION_PX) {
+                console.log("[BogorocRhytm DEBUG] drag registered as MISS: deviated too far from guide line");
+                bubble.hit = true; // resolved (as a miss), stop tracking/drawing it
+                registerMiss();
+                activeDrag = null;
+                return;
+            }
 
     handlePointerDown(e) {
         if (!this.startTime || this.finished) return;
@@ -417,7 +432,6 @@ export class BogorocRhytm {
                 active.note.done = true;
                 this.activeHolds[lane] = null;
             }
-        }
 
         for (const f of this.ghostFlashes) f.life -= 0.06;
         this.ghostFlashes = this.ghostFlashes.filter(f => f.life > 0);
