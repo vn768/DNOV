@@ -258,7 +258,6 @@ export class BogorocRhytm {
                 this.breakCombo();
             }
         }
-    }
 
     registerGhostTap(laneIdx) {
         this.ghostTaps++;
@@ -304,13 +303,6 @@ export class BogorocRhytm {
                     this.completeBubble(b);
                 }
             }
-
-            if (b.type === "spin") {
-                if (this.distance(pos.x, pos.y, b.x, b.y) <= this.SPIN_R) {
-                    b.holding = true;
-                    b.lastAngle = Math.atan2(pos.y - b.y, pos.x - b.x);
-                    b.angleAccum = b.angleAccum || 0;
-                    this.activeBubble = b;
                 }
             }
 
@@ -327,7 +319,6 @@ export class BogorocRhytm {
                 }
             }
         }
-    }
 
     handlePointerMove(e) {
         if (!this.activeBubble || this.activeBubble.done) return;
@@ -413,7 +404,6 @@ export class BogorocRhytm {
                 n.missed = true;
                 this.breakCombo();
             }
-        }
 
         for (let lane = 0; lane < this.activeHolds.length; lane++) {
             const active = this.activeHolds[lane];
@@ -446,33 +436,7 @@ export class BogorocRhytm {
                 .catch(() => { /* component may already be gone */ });
         }
     }
-
-    // Fraction (0-1) that falling keyboard notes should fade to as a
-    // freestyle segment approaches. 1 = fully visible, 0 = fully faded.
-    noteFadeFactor(t) {
-        let fade = 1;
-        for (const seg of this.segments) {
-            const leadStart = seg.start - this.FREESTYLE_LEAD_MS;
-            if (t >= leadStart && t <= seg.start) {
-                const progress = (t - leadStart) / this.FREESTYLE_LEAD_MS;
-                // Smoothstep easing: holds near full opacity a touch longer,
-                // then dissolves away with acceleration rather than a flat
-                // linear fade - reads as a much slower, gentler wind-down.
-                const eased = progress * progress * (3 - 2 * progress);
-                fade = Math.min(fade, 1 - eased);
-            } else if (t > seg.start && t < seg.end) {
-                fade = 0;
-            } else if (t >= seg.end && t <= seg.end + this.FREESTYLE_FADEIN_MS) {
-                // Mirror of the lead-out fade: notes dissolve back in over
-                // FREESTYLE_FADEIN_MS once the freestyle segment ends,
-                // instead of snapping straight back to full opacity.
-                const progress = (t - seg.end) / this.FREESTYLE_FADEIN_MS;
-                const eased = progress * progress * (3 - 2 * progress);
-                fade = Math.min(fade, eased);
             }
-        }
-        return Math.max(0, fade);
-    }
 
     drawNotes() {
         let t = this.now();
@@ -516,13 +480,6 @@ export class BogorocRhytm {
                     this.ctx.lineWidth = 4;
                     this.ctx.strokeRect(lane.x - this.HOLD_WIDTH / 2, this.HIT_Y - 6, this.HOLD_WIDTH, 12);
                 }
-            } else {
-                let y = this.HIT_Y - ((note.time - t) / this.TRAVEL_TIME) * this.HIT_Y + dissolveDrift;
-                this.ctx.beginPath();
-                this.ctx.arc(lane.x, y, this.NOTE_R * dissolveShrink, 0, Math.PI * 2);
-                this.ctx.fillStyle = lane.color;
-                this.ctx.fill();
-                this.drawLabel(lane.x, y, lane.label, this.NOTE_R * 0.55 * dissolveShrink);
             }
         }
 
@@ -914,8 +871,6 @@ export class BogorocRhytm {
             this.ctx.font = "bold 28px sans-serif";
             this.ctx.fillText("Click to Start", this.W / 2 - 80, this.H / 2);
         }
-        // when finished, leave the canvas blank - the Blazor stats overlay
-        // takes over the visuals at that point.
 
         requestAnimationFrame(() => this.loop());
     }
