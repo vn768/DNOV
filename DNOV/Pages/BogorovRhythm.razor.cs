@@ -5,14 +5,14 @@ using System.Text.Json;
 
 namespace DNOV.Pages
 {
-    public partial class BogorovRhytm : ComponentBase, IAsyncDisposable
+    public partial class BogorovRhythm : ComponentBase, IAsyncDisposable
     {
         [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private HttpClient Http { get; set; } = default!;
 
         private IJSObjectReference? _module;
         private IJSObjectReference? _gameInstance;
-        private DotNetObjectReference<BogorovRhytm>? _dotNetRef;
+        private DotNetObjectReference<BogorovRhythm>? _dotNetRef;
 
         private ElementReference _canvas;
         private ElementReference _audioRef;
@@ -135,14 +135,14 @@ namespace DNOV.Pages
                 return;
 
             _module = await JS.InvokeAsync<IJSObjectReference>(
-                "import",
-                "/Pages/BogorocRhytm.razor.js"
-            );
+         "import",
+         "./Pages/BogorovRhythm.razor.js"
+     );
 
             _dotNetRef = DotNetObjectReference.Create(this);
 
             _gameInstance = await _module.InvokeAsync<IJSObjectReference>(
-                "createBogorocRhytm",
+                "createBogorovRhythm",
                 "rhythmCanvas",
                 CurrentMap,
                 _audioRef,
