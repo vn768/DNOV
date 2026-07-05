@@ -239,7 +239,8 @@ namespace DNOV.Pages
         public int Time { get; set; }
         public int Lane { get; set; }
         public string Type { get; set; } = "tap"; // "tap" or "hold"
-        public int HoldMs { get; set; } = 0;       // only used when Type == "hold"
+        public int HoldMs { get; set; } = 0;       
+
         public bool Hit { get; set; }
         public bool Missed { get; set; }
     }
