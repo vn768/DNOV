@@ -5,14 +5,14 @@ using System.Text.Json;
 
 namespace DNOV.Pages
 {
-    public partial class BogorocRhytm : ComponentBase, IAsyncDisposable
+    public partial class BogorovRhytm : ComponentBase, IAsyncDisposable
     {
         [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private HttpClient Http { get; set; } = default!;
 
         private IJSObjectReference? _module;
         private IJSObjectReference? _gameInstance;
-        private DotNetObjectReference<BogorocRhytm>? _dotNetRef;
+        private DotNetObjectReference<BogorovRhytm>? _dotNetRef;
 
         private ElementReference _canvas;
         private ElementReference _audioRef;
