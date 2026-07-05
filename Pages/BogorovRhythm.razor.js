@@ -1045,7 +1045,7 @@ export function createBogorocRhytm(canvasId, mapData, audioElementRef, dotNetRef
     startTimestamp = performance.now();
     rafId = requestAnimationFrame(render);
 
-    // ---- public interface returned to C# ----
+    // ---- public interface returned to C# ---
     return {
         bindVolumeSlider(sliderId) {
             wireVolumeSlider(sliderId || DEFAULT_VOLUME_SLIDER_ID);
